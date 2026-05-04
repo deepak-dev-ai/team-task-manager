@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Team Task Manager
 
-## Getting Started
+A full-stack collaborative project management application built with Next.js, Prisma, and NextAuth.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **User Authentication:** Secure login and signup using NextAuth.
+- **Project Management:** Create projects, add members with Role-Based Access Control (Admin/Member).
+- **Task Management:** Create, assign, and update tasks with status (To Do, In Progress, Done) and priority.
+- **Dashboard:** Overview of total tasks, tasks by status, overdue tasks, and personal workload.
+- **Role-Based Access:** Admins can manage projects and members; Members can view and update assigned tasks.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework:** Next.js (App Router)
+- **Database ORM:** Prisma
+- **Database:** SQLite (Development) / PostgreSQL (Production on Railway)
+- **Authentication:** NextAuth.js (Credentials Provider with bcrypt)
+- **Styling:** Tailwind CSS
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local Setup
 
-## Learn More
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Set up the Database:**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Set Environment Variables:**
+   Ensure your `.env` file contains:
+   ```env
+   NEXTAUTH_SECRET="your-development-secret"
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Run the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` in your browser.
 
-## Deploy on Vercel
+## Deployment to Railway
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To deploy this application to Railway, follow these steps:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Push to GitHub:**
+   - Create a new repository on GitHub.
+   - Commit and push the code:
+     ```bash
+     git add .
+     git commit -m "Initial commit"
+     git branch -M main
+     git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+     git push -u origin main
+     ```
+
+2. **Deploy on Railway:**
+   - Go to [Railway Dashboard](https://railway.app/dashboard).
+   - Click **New Project** -> **Deploy from GitHub repo**.
+   - Select your newly created repository.
+
+3. **Add PostgreSQL Database:**
+   - In your Railway project, click **New** -> **Database** -> **Add PostgreSQL**.
+   - Railway will provision a Postgres database.
+
+4. **Configure Environment Variables in Railway:**
+   - Go to your Next.js application service in Railway.
+   - Click on the **Variables** tab.
+   - Add the following variables:
+     - `DATABASE_URL`: Set this to the connection string of the PostgreSQL database provided by Railway (e.g., `postgresql://...`).
+     - `NEXTAUTH_SECRET`: Generate a random string (e.g., using `openssl rand -base64 32`) and paste it here.
+     - `NEXTAUTH_URL`: Set this to the public URL provided by Railway once the app is deployed (e.g., `https://your-app-url.up.railway.app`).
+
+5. **Update Prisma Schema for Production (Important):**
+   - Before pushing to Railway, if you want to use PostgreSQL, change the provider in `prisma/schema.prisma` from `"sqlite"` to `"postgresql"`.
+   - Update your repository with this change so Railway builds it correctly for Postgres.
+
+6. **Trigger Deployment:**
+   - Railway will automatically build and deploy your application. You can view the live app from the public URL.
