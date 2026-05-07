@@ -16,6 +16,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -36,8 +37,21 @@ export default function ProjectDetailPage() {
       router.push("/login");
     } else if (status === "authenticated") {
       fetchProject();
+      fetchAllUsers();
     }
   }, [status, router, projectId]);
+
+  const fetchAllUsers = async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setAllUsers(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch all users", error);
+    }
+  };
 
   const fetchProject = async () => {
     try {
@@ -109,6 +123,21 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const updateTaskAssignee = async (taskId: string, newAssigneeId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeId: newAssigneeId === "unassigned" ? null : newAssigneeId }),
+      });
+      if (res.ok) {
+        fetchProject();
+      }
+    } catch (error) {
+      console.error("Update task assignee error", error);
+    }
+  };
+
   if (loading || status === "loading") {
     return <div className="flex-grow flex items-center justify-center">Loading...</div>;
   }
@@ -119,51 +148,64 @@ export default function ProjectDetailPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "High": return "text-red-600 bg-red-50";
-      case "Medium": return "text-yellow-600 bg-yellow-50";
-      case "Low": return "text-green-600 bg-green-50";
-      default: return "text-gray-600 bg-gray-50";
+      case "High": return "text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/30";
+      case "Medium": return "text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/30";
+      case "Low": return "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30";
+      default: return "text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-800";
     }
   };
 
   const renderColumn = (statusName: string) => {
     const columnTasks = project.tasks.filter((t: any) => t.status === statusName);
     return (
-      <div className="bg-gray-50/50 rounded-2xl p-4 min-h-[500px]">
-        <h3 className="font-semibold text-gray-700 mb-4 px-2 flex items-center justify-between">
+      <div className="bg-gray-50/50 dark:bg-gray-800/50 rounded-2xl p-4 min-h-[500px]">
+        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4 px-2 flex items-center justify-between">
           {statusName}
-          <span className="bg-white text-gray-500 text-xs py-1 px-2 rounded-full shadow-sm">
+          <span className="bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-xs py-1 px-2 rounded-full shadow-sm">
             {columnTasks.length}
           </span>
         </h3>
         <div className="space-y-3">
           {columnTasks.map((task: any) => (
-            <div key={task.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div key={task.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-gray-900">{task.title}</h4>
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">{task.title}</h4>
               </div>
               {task.description && (
-                <p className="text-sm text-gray-500 mb-3 line-clamp-2">{task.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>
               )}
               <div className="flex items-center gap-2 mb-3">
                 <span className={`text-xs px-2 py-1 rounded-md font-medium ${getPriorityColor(task.priority)}`}>
                   {task.priority}
                 </span>
                 {task.dueDate && (
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {new Date(task.dueDate).toLocaleDateString()}
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                <div className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
-                  {task.assignee?.name || "Unassigned"}
-                </div>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700 gap-2">
+                {isAdmin ? (
+                  <select
+                    value={task.assignee?.id || "unassigned"}
+                    onChange={(e) => updateTaskAssignee(task.id, e.target.value)}
+                    className="text-xs border-gray-200 dark:border-gray-600 rounded-md py-1 pr-6 pl-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors w-28 truncate"
+                  >
+                    <option value="unassigned">Unassigned</option>
+                    {allUsers.map((user: any) => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md w-28 truncate">
+                    {task.assignee?.name || "Unassigned"}
+                  </div>
+                )}
                 <select
                   value={task.status}
                   onChange={(e) => updateTaskStatus(task.id, e.target.value)}
-                  className="text-xs border-gray-200 rounded-md py-1 pr-6 pl-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="text-xs border-gray-200 dark:border-gray-600 rounded-md py-1 pr-6 pl-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                 >
                   <option value="To Do">To Do</option>
                   <option value="In Progress">In Progress</option>
@@ -173,7 +215,7 @@ export default function ProjectDetailPage() {
             </div>
           ))}
           {columnTasks.length === 0 && (
-            <div className="text-center py-8 text-sm text-gray-400">
+            <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
               No tasks yet
             </div>
           )}
@@ -186,14 +228,14 @@ export default function ProjectDetailPage() {
     <div className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-          <p className="mt-2 text-gray-600 max-w-2xl">{project.description}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400 max-w-2xl">{project.description}</p>
         </div>
         {isAdmin && (
           <div className="flex gap-3">
             <button
               onClick={() => setShowMemberModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 dark:border-gray-700 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <Users className="w-4 h-4" />
               Add Member
@@ -217,24 +259,24 @@ export default function ProjectDetailPage() {
 
       {/* Task Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Task</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Task</h2>
             <form onSubmit={handleCreateTask} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                 <input
                   type="text"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   rows={3}
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -242,9 +284,9 @@ export default function ProjectDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     value={newTask.priority}
                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                   >
@@ -254,9 +296,9 @@ export default function ProjectDetailPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     value={newTask.status}
                     onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
                   >
@@ -267,24 +309,24 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
                 <input
                   type="date"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={newTask.dueDate}
                   onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignee</label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={newTask.assigneeId}
                   onChange={(e) => setNewTask({ ...newTask, assigneeId: e.target.value })}
                 >
                   <option value="">Unassigned</option>
-                  {project.members.map((m: any) => (
-                    <option key={m.user.id} value={m.user.id}>{m.user.name}</option>
+                  {allUsers.map((user: any) => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
               </div>
@@ -292,7 +334,7 @@ export default function ProjectDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowTaskModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -310,24 +352,24 @@ export default function ProjectDetailPage() {
 
       {/* Member Modal */}
       {showMemberModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Add Team Member</h2>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Add Team Member</h2>
             <form onSubmit={handleAddMember} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User Email</label>
                 <input
                   type="email"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={newMember.email}
                   onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   value={newMember.role}
                   onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
                 >
@@ -339,7 +381,7 @@ export default function ProjectDetailPage() {
                 <button
                   type="button"
                   onClick={() => setShowMemberModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>

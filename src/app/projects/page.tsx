@@ -62,8 +62,8 @@ export default function ProjectsPage() {
     <div className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your team's projects</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your team's projects</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
@@ -75,23 +75,23 @@ export default function ProjectsPage() {
       </div>
 
       {showCreate && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Project</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Project</h2>
           <form onSubmit={handleCreateProject} className="space-y-4 max-w-lg">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name</label>
               <input
                 type="text"
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 value={newProject.name}
                 onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
               <textarea
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 rows={3}
                 value={newProject.description}
                 onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
@@ -110,17 +110,17 @@ export default function ProjectsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
           <Link href={`/projects/${project.id}`} key={project.id} className="block group">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all h-full flex flex-col">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/50 transition-all h-full flex flex-col">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
                   <Folder className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 line-clamp-1">{project.name}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-1">{project.name}</h2>
               </div>
-              <p className="text-gray-600 text-sm mb-6 flex-grow line-clamp-2">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 flex-grow line-clamp-2">
                 {project.description || "No description provided."}
               </p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-50 pt-4">
+              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-50 dark:border-gray-700 pt-4">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
                   <span>{project._count?.members || 0} Members</span>
@@ -134,10 +134,10 @@ export default function ProjectsPage() {
           </Link>
         ))}
         {projects.length === 0 && !showCreate && (
-          <div className="col-span-full py-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-            <Folder className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            <h3 className="text-lg font-medium text-gray-900">No projects yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new project.</p>
+          <div className="col-span-full py-12 text-center bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+            <Folder className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No projects yet</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating a new project.</p>
           </div>
         )}
       </div>
