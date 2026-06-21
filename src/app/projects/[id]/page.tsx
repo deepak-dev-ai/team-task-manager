@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { Plus, Users, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Users, Clock, AlertCircle, CheckCircle2, Sparkles, MessageSquare, Send, X, Bot, RefreshCw } from "lucide-react";
 import React from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 export default function ProjectDetailPage() {
   const { data: session, status } = useSession();
@@ -17,6 +19,41 @@ export default function ProjectDetailPage() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  // AI Assistant State & Hook
+  const [showAiChat, setShowAiChat] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { messages, status: chatStatus, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: { projectId },
+    }),
+    onFinish: () => {
+      fetchProject();
+    },
+  });
+
+  const [input, setInput] = useState("");
+  const isLoading = chatStatus === "streaming" || chatStatus === "submitted";
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput("");
+  };
+
+  // Auto-scroll to the bottom of the chat list
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleQuickAction = (text: string) => {
+    sendMessage({ text });
+  };
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -396,6 +433,156 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Floating AI Assistant Button */}
+      <button
+        onClick={() => setShowAiChat(!showAiChat)}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+        title="AI PM Assistant"
+      >
+        {showAiChat ? <X className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+      </button>
+
+      {/* Sliding AI Panel */}
+      <div
+        className={`fixed top-16 right-0 bottom-0 z-30 w-full sm:w-[420px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+          showAiChat ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white">AI PM Assistant</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Gemini 2.5 Agent</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAiChat(false)}
+            className="p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-grow overflow-y-auto p-4 space-y-4">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400 rounded-full flex items-center justify-center">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-950 dark:text-white text-sm">Welcome to your AI PM Workspace</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-[280px]">
+                  I can help you analyze workload, decompose goals, update task status, and manage this project.
+                </p>
+              </div>
+
+              {/* Quick Suggestions */}
+              <div className="w-full pt-4 space-y-2">
+                <button
+                  onClick={() => handleQuickAction("Summarize project status and overdue tasks")}
+                  className="w-full text-left p-3 text-xs bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl transition-colors flex items-center gap-2"
+                >
+                  📋 Summarize project status & overdue tasks
+                </button>
+                <button
+                  onClick={() => handleQuickAction("Analyze workload distribution among team members")}
+                  className="w-full text-left p-3 text-xs bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl transition-colors flex items-center gap-2"
+                >
+                  📊 Analyze member workloads
+                </button>
+                <button
+                  onClick={() => handleQuickAction("Suggest and create 3 subtasks to launch the marketing campaign")}
+                  className="w-full text-left p-3 text-xs bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-xl transition-colors flex items-center gap-2"
+                >
+                  💡 Suggest/create subtasks for a goal
+                </button>
+              </div>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-3 ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                {message.role !== "user" && (
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                )}
+                <div
+                  className={`p-3 rounded-2xl max-w-[80%] text-sm ${
+                    message.role === "user"
+                      ? "bg-blue-600 text-white rounded-tr-none shadow-sm"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+                  }`}
+                >
+                  {message.parts.map((part, idx) => {
+                    if (part.type === "text") {
+                      return (
+                        <p key={idx} className="whitespace-pre-wrap leading-relaxed">
+                          {part.text}
+                        </p>
+                      );
+                    }
+                    if (part.type === "reasoning") {
+                      return (
+                        <p key={idx} className="text-xs italic text-gray-500 dark:text-gray-400 border-l-2 border-gray-300 dark:border-gray-600 pl-2 py-0.5 my-1">
+                          {part.text}
+                        </p>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 animate-pulse">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none border border-gray-200/50 dark:border-gray-700/50 flex items-center gap-1.5 shadow-sm">
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input area */}
+        <form
+          onSubmit={handleSendMessage}
+          className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80 backdrop-blur-sm"
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask the AI PM..."
+              className="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors flex items-center justify-center"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
