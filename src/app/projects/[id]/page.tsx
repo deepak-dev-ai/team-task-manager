@@ -24,13 +24,16 @@ export default function ProjectDetailPage() {
   const [showAiChat, setShowAiChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { messages, status: chatStatus, sendMessage } = useChat({
+  const { messages, status: chatStatus, sendMessage, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: { projectId },
     }),
     onFinish: () => {
       fetchProject();
+    },
+    onError: (err) => {
+      console.error("AI PM Assistant error:", err);
     },
   });
 
@@ -554,6 +557,15 @@ export default function ProjectDetailPage() {
                 <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                 <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                 <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-xl text-xs flex items-start gap-2 shadow-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">AI Assistant Error</p>
+                <p className="mt-0.5">{error.message || "An unexpected error occurred. Please verify your Gemini API Key or check server logs."}</p>
               </div>
             </div>
           )}

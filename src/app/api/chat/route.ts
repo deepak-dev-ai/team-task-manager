@@ -1,11 +1,21 @@
-import { google } from '@ai-sdk/google';
-import { streamText, tool } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { streamText, tool, convertToModelMessages } from 'ai';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 
 export const maxDuration = 30; // Max execution time for Next.js routes
+
+const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+if (!googleApiKey) {
+  console.warn("WARNING: No Google/Gemini API key found in environment variables. The AI Assistant will not be able to generate responses.");
+}
+
+const google = createGoogleGenerativeAI({
+  apiKey: googleApiKey,
+});
 
 export async function POST(req: Request) {
   try {
@@ -37,8 +47,8 @@ export async function POST(req: Request) {
 
     // 3. Stream text from Gemini model with task-management tools
     const result = await streamText({
-      model: google('gemini-1.5-flash'), // Lightweight, fast, and highly capable
-      messages,
+      model: google('gemini-2.5-flash'), // Lightweight, fast, and highly capable
+      messages: await convertToModelMessages(messages),
       system: `You are an Autonomous Project Manager Agent in the Team Task Manager application.
 Your goal is to assist team members and admins in managing tasks, understanding project status, and optimizing their workflow.
 
@@ -226,12 +236,21 @@ Instructions:
       }
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      headers: {
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+      },
+      onError: (error) => {
+        console.error('Stream error:', error);
+        return error instanceof Error ? error.message : String(error);
+      },
+    });
   } catch (error: any) {
     console.error('Chat API Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
+    return new Response(error.message || 'Internal Server Error', {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }
 }
