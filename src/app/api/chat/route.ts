@@ -75,7 +75,7 @@ Instructions:
             return {
               name: project.name,
               description: project.description,
-              members: project.members.map(m => ({
+              members: project.members.map((m: any) => ({
                 id: m.user.id,
                 name: m.user.name,
                 email: m.user.email,
@@ -97,7 +97,7 @@ Instructions:
               },
               orderBy: { createdAt: 'desc' }
             });
-            return tasks.map(t => ({
+            return tasks.map((t: any) => ({
               id: t.id,
               title: t.title,
               description: t.description,
