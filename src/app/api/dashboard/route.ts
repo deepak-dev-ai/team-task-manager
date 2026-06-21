@@ -18,7 +18,7 @@ export async function GET() {
       select: { projectId: true },
     });
 
-    const projectIds = projectMembers.map((pm) => pm.projectId);
+    const projectIds = projectMembers.map((pm: any) => pm.projectId);
 
     // Get all tasks in those projects
     const tasks = await prisma.task.findMany({
@@ -27,15 +27,15 @@ export async function GET() {
 
     const totalTasks = tasks.length;
     const tasksByStatus = {
-      'To Do': tasks.filter((t) => t.status === 'To Do').length,
-      'In Progress': tasks.filter((t) => t.status === 'In Progress').length,
-      'Done': tasks.filter((t) => t.status === 'Done').length,
+      'To Do': tasks.filter((t: any) => t.status === 'To Do').length,
+      'In Progress': tasks.filter((t: any) => t.status === 'In Progress').length,
+      'Done': tasks.filter((t: any) => t.status === 'Done').length,
     };
 
-    const tasksAssignedToUser = tasks.filter((t) => t.assigneeId === userId).length;
+    const tasksAssignedToUser = tasks.filter((t: any) => t.assigneeId === userId).length;
 
     const now = new Date();
-    const overdueTasks = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'Done').length;
+    const overdueTasks = tasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'Done').length;
 
     return NextResponse.json({
       totalTasks,
